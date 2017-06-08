@@ -17,11 +17,18 @@ public class GridSpace : MonoBehaviour
 	void Awake () 
 	{
 		sr = GetComponent<SpriteRenderer>();
-		
 	}
 
 	void Start()
 	{
+		Grid = GridManager.Instance;
+		if (!Grid.trueGrid.ContainsKey(new Vector2(transform.position.x, transform.position.y)))
+		{
+			// join the Dictionary representation of the grid
+			Grid.trueGrid.Add(new Vector2(transform.position.x, transform.position.y), this);
+		}
+
+
 		if (!impassible)
 		{
 			sr.enabled = false;
