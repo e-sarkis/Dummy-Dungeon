@@ -88,7 +88,8 @@ public class GridManager : MonoBehaviour
 
 				if (currentPosition == goalPosition)
 				{
-					break; // got 'em
+					Debug.Log("Could reach the goal position.");
+					return 0; // got 'em
 				}
 				markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity)); // drop marker
 
@@ -103,11 +104,8 @@ public class GridManager : MonoBehaviour
 			} catch (InvalidOperationException) 
 			{
 				Debug.Log("Couldn't reach the goal position.");
-				break;
+				return 1;
 			}
-			
-			
-
 		}
 		
 
