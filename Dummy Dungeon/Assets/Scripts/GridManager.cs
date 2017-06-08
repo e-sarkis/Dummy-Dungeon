@@ -63,8 +63,51 @@ public class GridManager : MonoBehaviour
 		if (Input.GetButtonDown("Fire1"))
 		{
 			// do a pathfinding search
-			BFSearch(start, goal);
+			GreedyBFSearch(start, goal);
 		}
+	}
+
+
+	int GreedyBFSearch(Vector2 startPosition, Vector2 goalPosition)
+	{
+		clearMarkers();
+		markers.Add(Instantiate(startMarkerPrefab, new Vector3(startPosition.x, startPosition.y, 0), Quaternion.identity)); // drop marker
+		markers.Add(Instantiate(goalMarkerPrefab, new Vector3(goalPosition.x, goalPosition.y, 0), Quaternion.identity)); // drop marker
+
+		Queue<Vector2> frontier = new Queue<Vector2>();
+		frontier.Enqueue(startPosition);
+
+		Dictionary<Vector2, GridSpace> cameFrom = new Dictionary<Vector2, GridSpace>();
+		cameFrom.Add(startPosition, getGridSpace(startPosition));
+
+		while (cameFrom.Keys.Count != 0)
+		{
+			try 
+			{ 
+				Vector2 currentPosition = frontier.Dequeue(); 
+
+				if (currentPosition == goalPosition)
+				{
+					Debug.Log("Could reach the goal position.");
+					return 0; // got 'em
+				}
+				markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity)); // drop marker
+
+				foreach (Vector2 nextPosition in getNeighbourPositions(currentPosition))
+				{
+					if (!cameFrom.ContainsKey(nextPosition))
+					{
+						frontier.Enqueue(nextPosition);
+						cameFrom.Add(nextPosition, getGridSpace(currentPosition));
+					}
+				}
+			} catch (InvalidOperationException) 
+			{
+				break;
+			}
+		}
+		Debug.Log("Couldn't reach the goal position.");
+		return 1; // a path to the goal could not be found
 	}
 
 
@@ -103,12 +146,10 @@ public class GridManager : MonoBehaviour
 				}
 			} catch (InvalidOperationException) 
 			{
-				Debug.Log("Couldn't reach the goal position.");
-				return 1;
+				break;
 			}
 		}
-		
-
+		Debug.Log("Couldn't reach the goal position.");
 		return 1; // a path to the goal could not be found
 	}
 
@@ -248,6 +289,12 @@ public class GridManager : MonoBehaviour
 			Color.white
 		);
     }
+
+
+}
+
+public class PriorityQueue<T>
+{
 
 
 }
