@@ -8,6 +8,10 @@ public class GridSpace : MonoBehaviour
 	public bool impassible = false; // false if this location legally traversible
 	public int moveCost = 1; // the movement cost to traverse this spot
 
+
+	[HideInInspector]
+	public List<GridSpace> neighbours;
+
 	// Sprite representation
 	private SpriteRenderer sr;
 	//public bool Tall; //true if the sprite is 32x16 otherwise assumed to be 16x16
@@ -17,6 +21,8 @@ public class GridSpace : MonoBehaviour
 	void Awake () 
 	{
 		sr = GetComponent<SpriteRenderer>();
+
+		neighbours = new List<GridSpace>();
 	}
 
 	void Start()
