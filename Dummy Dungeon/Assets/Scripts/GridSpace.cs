@@ -40,4 +40,18 @@ public class GridSpace : MonoBehaviour
 			sr.enabled = false;
 		}
 	}
+
+
+	public void findNeighbours()
+	{
+
+	}
+
+
+	
+	public Vector2 coords()
+	{
+		return new Vector2(transform.position.x, transform.position.y);
+	}
+
 }
