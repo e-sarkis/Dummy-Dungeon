@@ -37,13 +37,13 @@ public class GridSpace : MonoBehaviour
 
 		if (impassible)
 		{
-			sr.color = Color.white;
+			sr.color = Color.black;
 		} else if (moveCost == 1)
 		{
-			sr.enabled = false;
+			sr.color = Color.white;
 		} else if (moveCost > 1)
 		{
-			sr.color = Color.red;
+			sr.color = Color.grey;
 		}
 	}
 
