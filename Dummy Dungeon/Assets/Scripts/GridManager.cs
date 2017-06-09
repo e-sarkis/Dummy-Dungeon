@@ -74,8 +74,77 @@ public class GridManager : MonoBehaviour
 				goal = new Vector2(goalGameObject.transform.position.x, goalGameObject.transform.position.y);
 			}
 
-			GreedyBFSearch(start, goal);			
+			AStarSearch(start, goal);			
 		}
+	}
+
+
+	int AStarSearch(Vector2 startPosition, Vector2 goalPosition)
+	{
+		clearMarkers();
+		markers.Add(Instantiate(startMarkerPrefab, new Vector3(startPosition.x, startPosition.y, 0), Quaternion.identity)); // drop marker
+		markers.Add(Instantiate(goalMarkerPrefab, new Vector3(goalPosition.x, goalPosition.y, 0), Quaternion.identity)); // drop marker
+		if (getGridSpace(startPosition).impassible || getGridSpace(goalPosition).impassible) 
+		{
+			Debug.Log("Start or Goal position an impassible Gridspace.");
+			return 1; 
+		} 
+
+		PriorityQueue<Vector2> frontier = new PriorityQueue<Vector2>();
+		frontier.Enqueue(startPosition, 0);
+
+		Dictionary<Vector2, GridSpace> cameFrom = new Dictionary<Vector2, GridSpace>();
+		cameFrom.Add(startPosition, getGridSpace(startPosition));
+		Dictionary<Vector2, int> costSoFar = new Dictionary<Vector2, int>();
+		costSoFar.Add(startPosition, 0);
+
+		while (frontier.Count > 0)
+		{
+			try 
+			{ 
+				Vector2 currentPosition = frontier.Dequeue(); 
+
+				if (currentPosition == goalPosition)
+				{
+					Debug.Log("The goal position is reachable.");
+					List<Vector2> path = new List<Vector2>();
+					path.Add(currentPosition);
+					while (currentPosition != startPosition)
+					{
+						currentPosition = cameFrom[currentPosition].coords();
+						markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity));
+						path.Add(currentPosition);
+					}
+
+					return 0; // got 'em
+				}
+				
+				foreach (Vector2 nextPosition in getNeighbourPositions(currentPosition))
+				{
+					int newCost = costSoFar[currentPosition] + getGridSpace(nextPosition).moveCost;
+					
+					if (!costSoFar.ContainsKey(nextPosition)) { costSoFar.Add(nextPosition, getGridSpace(nextPosition).moveCost); }
+					
+					if (!cameFrom.ContainsKey(nextPosition) || newCost < costSoFar[nextPosition])
+					{
+						costSoFar[nextPosition] = newCost;
+						double priority = heuristicManhattan(goalPosition, nextPosition) + newCost;
+						frontier.Enqueue(nextPosition, priority);
+						cameFrom.Add(nextPosition, getGridSpace(currentPosition));
+
+						/*if ((currentPosition != startPosition))  // drop a search marker to show we've considered this grid location.
+						{
+							markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity));
+						}*/
+					}
+				}
+			} catch (InvalidOperationException) 
+			{
+				break;
+			}
+		}
+		Debug.Log("Couldn't reach the goal position.");
+		return 1; // a path to the goal could not be found
 	}
 
 
@@ -116,7 +185,7 @@ public class GridManager : MonoBehaviour
 				{
 					if (!cameFrom.ContainsKey(nextPosition))
 					{
-						frontier.Enqueue(nextPosition, heuristic(goalPosition, nextPosition));
+						frontier.Enqueue(nextPosition, heuristicManhattan(goalPosition, nextPosition));
 						cameFrom.Add(nextPosition, getGridSpace(currentPosition));
 					}
 				}
@@ -130,7 +199,7 @@ public class GridManager : MonoBehaviour
 	}
 
 
-    private double heuristic(Vector2 a, Vector2 b)
+    private double heuristicManhattan(Vector2 a, Vector2 b)
     {
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
@@ -221,7 +290,7 @@ public class GridManager : MonoBehaviour
 			return trueGrid[position];
 		} else
 		{
-			Debug.LogWarning("(" + position.ToString() + ") is not in GridManager's trueGrid Dictionary");
+			Debug.LogWarning("(" + position.ToString() + ") is not in GridManager's trueGrid Dictionary and getGridSpace returned null instead of a GridSpace.");
 			return null;
 		}
 	}
@@ -279,10 +348,14 @@ public class GridManager : MonoBehaviour
 		{
 			for (int j = 1; j < GridHeight; j++)
 			{
-				GameObject newFloor = Instantiate(floorPrefab, new Vector3(i, j, 0), Quaternion.identity);
-				newFloor.GetComponent<GridSpace>().impassible = false;
-				newFloor.transform.parent = Floor.transform;
-				newFloor.name = "Floor: (" + i + ", " + j + ")";
+				if (!trueGrid.ContainsKey(new Vector2(i, j)))
+				{
+					GameObject newFloor = Instantiate(floorPrefab, new Vector3(i, j, 0), Quaternion.identity);
+					newFloor.GetComponent<GridSpace>().impassible = false;
+					newFloor.transform.parent = Floor.transform;
+					newFloor.name = "Floor: (" + i + ", " + j + ")";
+				}
+				
 			}
 		}
     }

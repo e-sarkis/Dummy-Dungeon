@@ -35,18 +35,17 @@ public class GridSpace : MonoBehaviour
 		}
 
 
-		if (!impassible)
+		if (impassible)
+		{
+			sr.color = Color.white;
+		} else if (moveCost == 1)
 		{
 			sr.enabled = false;
+		} else if (moveCost > 1)
+		{
+			sr.color = Color.red;
 		}
 	}
-
-
-	public void findNeighbours()
-	{
-
-	}
-
 
 	
 	public Vector2 coords()
