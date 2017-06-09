@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Eppy;
 
 public class GridManager : MonoBehaviour 
 {
@@ -20,6 +21,10 @@ public class GridManager : MonoBehaviour
 
 	public Vector2 start;
 	public Vector2 goal;
+
+	public bool useGameObjects = false; // true if instead of vectors obtain gameobject positions
+	public GameObject startGameObject = null;
+	public GameObject goalGameObject = null;
 
 	public GameObject perimeterPrefab;
 	public GameObject floorPrefab;
@@ -63,7 +68,13 @@ public class GridManager : MonoBehaviour
 		if (Input.GetButtonDown("Fire1"))
 		{
 			// do a pathfinding search
-			GreedyBFSearch(start, goal);
+			if (useGameObjects && ( startGameObject != null && goalGameObject != null ))
+			{
+				start = new Vector2(startGameObject.transform.position.x, startGameObject.transform.position.y);
+				goal = new Vector2(goalGameObject.transform.position.x, goalGameObject.transform.position.y);
+			}
+
+			GreedyBFSearch(start, goal);			
 		}
 	}
 
@@ -73,9 +84,14 @@ public class GridManager : MonoBehaviour
 		clearMarkers();
 		markers.Add(Instantiate(startMarkerPrefab, new Vector3(startPosition.x, startPosition.y, 0), Quaternion.identity)); // drop marker
 		markers.Add(Instantiate(goalMarkerPrefab, new Vector3(goalPosition.x, goalPosition.y, 0), Quaternion.identity)); // drop marker
+		if (getGridSpace(startPosition).impassible || getGridSpace(goalPosition).impassible) 
+		{
+			Debug.Log("Start or Goal position an impassible Gridspace.");
+			return 1; 
+		} 
 
-		Queue<Vector2> frontier = new Queue<Vector2>();
-		frontier.Enqueue(startPosition);
+		PriorityQueue<Vector2> frontier = new PriorityQueue<Vector2>();
+		frontier.Enqueue(startPosition, 0);
 
 		Dictionary<Vector2, GridSpace> cameFrom = new Dictionary<Vector2, GridSpace>();
 		cameFrom.Add(startPosition, getGridSpace(startPosition));
@@ -90,14 +106,17 @@ public class GridManager : MonoBehaviour
 				{
 					Debug.Log("Could reach the goal position.");
 					return 0; // got 'em
+				} else if ((currentPosition != startPosition))  // drop a search marker
+				{
+					markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity));
 				}
-				markers.Add(Instantiate(searchMarkerPrefab, new Vector3(currentPosition.x, currentPosition.y, 0), Quaternion.identity)); // drop marker
+				
 
 				foreach (Vector2 nextPosition in getNeighbourPositions(currentPosition))
 				{
 					if (!cameFrom.ContainsKey(nextPosition))
 					{
-						frontier.Enqueue(nextPosition);
+						frontier.Enqueue(nextPosition, heuristic(goalPosition, nextPosition));
 						cameFrom.Add(nextPosition, getGridSpace(currentPosition));
 					}
 				}
@@ -109,6 +128,12 @@ public class GridManager : MonoBehaviour
 		Debug.Log("Couldn't reach the goal position.");
 		return 1; // a path to the goal could not be found
 	}
+
+
+    private double heuristic(Vector2 a, Vector2 b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    }
 
 
     int BFSearch(Vector2 startPosition, Vector2 goalPosition)
@@ -175,14 +200,14 @@ public class GridManager : MonoBehaviour
 		GridSpace possibleNeighbour;
 
 		possibleNeighbour = getGridSpace(new Vector2(originX + 1, originY));
-		if (possibleNeighbour != null) { results.Add(possibleNeighbour.coords()); }
+		if (possibleNeighbour != null && !possibleNeighbour.impassible){ results.Add(possibleNeighbour.coords()); }
 		possibleNeighbour = getGridSpace(new Vector2(originX - 1, originY));
-		if (possibleNeighbour != null) { results.Add(possibleNeighbour.coords()); }
+		if (possibleNeighbour != null && !possibleNeighbour.impassible) { results.Add(possibleNeighbour.coords()); }
 
 		possibleNeighbour = getGridSpace(new Vector2(originX, originY + 1));
-		if (possibleNeighbour != null) { results.Add(possibleNeighbour.coords()); }
+		if (possibleNeighbour != null && !possibleNeighbour.impassible) { results.Add(possibleNeighbour.coords()); }
 		possibleNeighbour = getGridSpace(new Vector2(originX, originY - 1));
-		if (possibleNeighbour != null) { results.Add(possibleNeighbour.coords()); }
+		if (possibleNeighbour != null && !possibleNeighbour.impassible) { results.Add(possibleNeighbour.coords()); }
 
 		return results;
 	}
@@ -295,6 +320,35 @@ public class GridManager : MonoBehaviour
 
 public class PriorityQueue<T>
 {
+	List<Tuple<T, double>> elements = new List<Tuple<T, double>>();
+
+	public int Count
+	{
+		get { return elements.Count; }
+	}
 
 
+	public void Enqueue(T item, double priority)
+	{
+		elements.Add(Tuple.Create(item, priority));
+	}
+
+
+	public T Dequeue()
+	{
+		int best_idx = 0;
+
+		for (int i = 0; i < elements.Count; i++)
+		{
+			if (elements[i].Item2 < elements[best_idx].Item2)
+			{
+				best_idx = i;
+			}
+		}
+
+		T bestItem = elements[best_idx].Item1;
+		elements.RemoveAt(best_idx);
+		return bestItem;
+	}
 }
+
